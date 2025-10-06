@@ -11,6 +11,7 @@ export interface APIBuilderParams
     extends ContextBuilderParams,
         Omit<RequestBuilderParams, 'prompt'> {
     onData: (data: string) => void
+    onImage: (data: string) => void
     onEnd: (data: string) => void
     stopSequence: string[]
     stopGenerating: () => void
@@ -20,6 +21,7 @@ export const buildAndSendRequest = async ({
     apiConfig,
     apiValues,
     onData,
+    onImage,
     onEnd,
     instruct,
     samplers,
@@ -97,10 +99,20 @@ export const buildAndSendRequest = async ({
             payload: payload,
             onEvent: (event) => {
                 try {
+                    const parsedEvent = typeof event === 'string' ? JSON.parse(event) : event
                     const data = getNestedValue(
-                        typeof event === 'string' ? JSON.parse(event) : event,
+                        parsedEvent,
                         apiConfig.request.responseParsePattern
                     )
+
+                    if (apiConfig.request.imageParsePattern) {
+                        const image = getNestedValue(
+                            parsedEvent,
+                            apiConfig.request.imageParsePattern
+                        )
+                        if (image) onImage(image)
+                    }
+
                     const text = data.replaceAll(replaceStrings, '')
 
                     onData(text)

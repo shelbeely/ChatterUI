@@ -103,7 +103,7 @@ export interface ChatState {
     resetRegenCache: () => void
 
     // attachments
-    // add attachment
+    addAttachment: (index: number, uri: string) => Promise<void>
     removeAttachment: (entryId: number, attachmentId: number) => Promise<void>
 
     // generation system
@@ -499,6 +499,20 @@ export namespace Chats {
                 ...state,
                 data: state?.data ? { ...state.data, messages: messages } : state.data,
             }))
+        },
+        addAttachment: async (index: number, uri: string) => {
+            const messages = get()?.data?.messages
+            const message = messages?.[index]
+            if (!messages || !message) return
+            const newAttachment = await db.mutate.createAttachment(message.id, uri)
+            if (newAttachment) {
+                message.attachments.push(newAttachment)
+                messages[index] = { ...message }
+                set((state) => ({
+                    ...state,
+                    data: state?.data ? { ...state.data, messages: [...messages] } : state.data,
+                }))
+            }
         },
         removeAttachment: async (index: number, attachmentId: number) => {
             const messages = get()?.data?.messages

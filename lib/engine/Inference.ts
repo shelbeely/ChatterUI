@@ -4,6 +4,8 @@ import BackgroundService from 'react-native-background-actions'
 
 import { AppSettings } from '@lib/constants/GlobalValues'
 import { Instructs } from '@lib/state/Instructs'
+import { randomUUID } from 'expo-crypto'
+import * as FileSystem from 'expo-file-system'
 import { SamplersManager } from '@lib/state/SamplerState'
 import { useTTSStore } from '@lib/state/TTS'
 import { mmkv } from '@lib/storage/MMKV'
@@ -115,6 +117,26 @@ async function chatInferenceStream() {
     fields.onData = (text) => {
         Chats.useChatState.getState().insertBuffer(text)
         useTTSStore.getState().insertBuffer(text)
+    }
+    fields.onImage = async (image) => {
+        const chatState = Chats.useChatState.getState()
+        const messages = chatState.data?.messages
+        if (!messages) return
+
+        const fileUri = FileSystem.cacheDirectory + randomUUID()
+
+        try {
+            if (image.startsWith('http')) {
+                await FileSystem.downloadAsync(image, fileUri)
+            } else {
+                await FileSystem.writeAsStringAsync(fileUri, image, {
+                    encoding: FileSystem.EncodingType.Base64,
+                })
+            }
+            await chatState.addAttachment(messages.length - 1, fileUri)
+        } catch (e) {
+            Logger.error('Failed to save image: ' + e)
+        }
     }
     fields.onEnd = async () => {
         const chat = Chats.useChatState.getState().data

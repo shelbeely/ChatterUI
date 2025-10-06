@@ -101,6 +101,7 @@
     "eslint-plugin-internal": "file:./eslint",
     "eslint-plugin-prettier": "^5.1.3",
     "expo-atlas": "^0.4.0",
+    "jest-expo": "^54.0.12",
     "patch-package": "^8.0.0",
     "prettier": "^3.2.4",
     "typescript": "~5.8.3"
